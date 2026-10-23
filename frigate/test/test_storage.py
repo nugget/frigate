@@ -18,6 +18,13 @@ from frigate.test.const import TEST_DB, TEST_DB_CLEANUPS
 
 class TestHttp(unittest.TestCase):
     def setUp(self):
+        # StorageMaintainer opens a zmq config subscriber that these tests never
+        # stop; an orphaned zmq context can block forever in term() when
+        # garbage collected
+        subscriber = patch("frigate.storage.CameraConfigUpdateSubscriber")
+        self.subscriber = subscriber.start()
+        self.addCleanup(subscriber.stop)
+
         # setup clean database for each test run
         migrate_db = SqliteDatabase("test.db")
         del logging.getLogger("peewee_migrate").handlers[:]
